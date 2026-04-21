@@ -17,7 +17,7 @@ stages:
 
     steps:
 
-    # ✅ Install Terraform (required for self-hosted agent)
+    # ✅ Install Terraform (FIXED)
     - script: |
         echo "Installing dependencies..."
         sudo apt-get update -y
@@ -25,8 +25,17 @@ stages:
 
         echo "Installing Terraform..."
         wget -q https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+
         unzip -o terraform_1.8.5_linux_amd64.zip
-        sudo mv -f terraform /usr/local/bin/
+
+        # ✅ Rename binary to avoid conflict with terraform folder
+        mv terraform terraform-bin
+
+        # ✅ Move safely
+        sudo mv -f terraform-bin /usr/local/bin/terraform
+
+        echo "Terraform location:"
+        which terraform
 
         echo "Terraform version:"
         terraform -version
@@ -46,7 +55,7 @@ stages:
         ls -al terraform/modules/compute/
       displayName: 'Prepare SSH Key'
 
-    # ✅ Debug (optional but useful)
+    # ✅ Debug (helps verify folder structure)
     - script: |
         echo "Current directory:"
         pwd
@@ -54,7 +63,7 @@ stages:
         ls -R
       displayName: 'DEBUG FILES'
 
-    # ✅ Run Terraform (NO AzureCLI, NO cd bug)
+    # ✅ Run Terraform (correct, no cd bug)
     - script: |
         echo "##[group]Terraform Init/Plan/Apply"
 
