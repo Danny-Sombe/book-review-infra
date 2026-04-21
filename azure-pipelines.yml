@@ -25,16 +25,16 @@ stages:
     - task: DownloadSecureFile@1
       name: download_ssh_key
       inputs:
-        secureFile: 'id_ed25519'
+        secureFile: 'id_ed25519.pub'
 
     - script: |
         echo "Copying SSH public key into Terraform module"
 
         mkdir -p ~/.ssh
-        cp $(download_ssh_key.secureFilePath) ~/.ssh/id_ed25519
+        cp $(download_ssh_key.secureFilePath) ~/id_ed25519.pub
 
         # Now copy into Terraform module path
-        cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_ed25519
+        cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_ed25519.pub
 
         echo "Listing contents of terraform/modules/compute/"
         ls -al terraform/modules/compute/
@@ -42,7 +42,7 @@ stages:
 
     - task: AzureCLI@2
       inputs:
-        azureSubscription: 'it-azure-connection'
+        azureSubscription: 'azure-devops'
         scriptType: bash
         scriptLocation: inlineScript
         workingDirectory: $(System.DefaultWorkingDirectory)/terraform
