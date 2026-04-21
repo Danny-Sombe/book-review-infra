@@ -7,7 +7,6 @@ trigger:
       - main
 
 stages:
-
 - stage: Terraform
   displayName: 'Provision Infrastructure'
   jobs:
@@ -15,12 +14,13 @@ stages:
     displayName: 'Terraform Apply'
     pool:
       vmImage: 'ubuntu-latest'
+
     steps:
- 
-    # Not needed for hosted vm
-    # - task: UsePythonVersion@0
-    #   inputs:
-    #     versionSpec: '3.x'
+
+    # ✅ FIXED indentation + correct placement
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
 
     - task: DownloadSecureFile@1
       name: download_ssh_key
@@ -33,10 +33,8 @@ stages:
         mkdir -p ~/.ssh
         cp $(download_ssh_key.secureFilePath) ~/.ssh/id_rsa.pub
 
-        # Now copy into Terraform module path
         cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_rsa.pub
 
-        echo "Listing contents of terraform/modules/compute/"
         ls -al terraform/modules/compute/
       displayName: 'Extract SSH Public Key for Terraform'
 
@@ -48,8 +46,9 @@ stages:
         workingDirectory: $(System.DefaultWorkingDirectory)/terraform
         inlineScript: |
           echo "##[group]Terraform Init/Plan/Apply"
-          cd terraform
+
           terraform init -input=false 
           terraform plan -input=false -var-file="envs/dev.tfvars"
           terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
+
           echo "##[endgroup]"
