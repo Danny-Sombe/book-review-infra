@@ -7,7 +7,6 @@ trigger:
       - main
 
 stages:
-
 - stage: Terraform
   displayName: 'Provision Infrastructure'
   jobs:
@@ -15,41 +14,59 @@ stages:
     displayName: 'Terraform Apply'
     pool:
       name: 'epicbook-hosted-agent'
-    steps:
- 
-    # Not needed for hosted vm
-    # - task: UsePythonVersion@0
-    #   inputs:
-    #     versionSpec: '3.x'
 
+    steps:
+
+    # ✅ Install Terraform (required for self-hosted agent)
+    - script: |
+        echo "Installing dependencies..."
+        sudo apt-get update -y
+        sudo apt-get install -y unzip wget
+
+        echo "Installing Terraform..."
+        wget -q https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+        unzip -o terraform_1.8.5_linux_amd64.zip
+        sudo mv -f terraform /usr/local/bin/
+
+        echo "Terraform version:"
+        terraform -version
+      displayName: 'Install Terraform'
+
+    # ✅ Download SSH public key
     - task: DownloadSecureFile@1
       name: download_ssh_key
       inputs:
         secureFile: 'id_rsa.pub'
 
+    # ✅ Copy key into Terraform module
     - script: |
         echo "Copying SSH public key into Terraform module"
-
-        mkdir -p ~/.ssh
-        cp $(download_ssh_key.secureFilePath) ~/.ssh/id_rsa.pub
-
-        # Now copy into Terraform module path
+        mkdir -p terraform/modules/compute
         cp $(download_ssh_key.secureFilePath) terraform/modules/compute/id_rsa.pub
-
-        echo "Listing contents of terraform/modules/compute/"
         ls -al terraform/modules/compute/
-      displayName: 'Extract SSH Public Key for Terraform'
+      displayName: 'Prepare SSH Key'
 
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'azure-devops'
-        scriptType: bash
-        scriptLocation: inlineScript
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform
-        inlineScript: |
-          echo "##[group]Terraform Init/Plan/Apply"
-          cd terraform
-          terraform init -input=false 
-          terraform plan -input=false -var-file="envs/dev.tfvars"
-          terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
-          echo "##[endgroup]"
+    # ✅ Debug (optional but useful)
+    - script: |
+        echo "Current directory:"
+        pwd
+        echo "Repo structure:"
+        ls -R
+      displayName: 'DEBUG FILES'
+
+    # ✅ Run Terraform (NO AzureCLI, NO cd bug)
+    - script: |
+        echo "##[group]Terraform Init/Plan/Apply"
+
+        terraform init
+        terraform plan -var-file="envs/dev.tfvars"
+        terraform apply -auto-approve -var-file="envs/dev.tfvars"
+
+        echo "##[endgroup]"
+      workingDirectory: $(System.DefaultWorkingDirectory)/terraform
+      displayName: 'Run Terraform'
+
+    # ✅ Show outputs
+    - script: terraform output
+      workingDirectory: $(System.DefaultWorkingDirectory)/terraform
+      displayName: 'Show Terraform Outputs'
