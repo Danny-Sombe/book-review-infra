@@ -14,7 +14,7 @@ stages:
   - job: Terraform_Apply
     displayName: 'Terraform Apply'
     pool:
-      vmImage: 'ubuntu-latest'
+      name: 'epicbook-hosted-agent'
     steps:
  
     # Not needed for hosted vm
