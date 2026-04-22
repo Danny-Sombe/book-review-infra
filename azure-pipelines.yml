@@ -41,14 +41,18 @@ stages:
       displayName: 'Extract SSH Public Key for Terraform'
 
     - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'it-azure-connection'
-        scriptType: bash
-        scriptLocation: inlineScript
-        workingDirectory: $(System.DefaultWorkingDirectory)/terraform
-        inlineScript: |
-          echo "##[group]Terraform Init/Plan/Apply"
-          cd terraform
+  inputs:
+    azureSubscription: 'it-azure-connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Terraform Init/Plan/Apply"
+
+      cd $(System.DefaultWorkingDirectory)/terraform
+
+      terraform init
+      terraform plan
+      terraform apply -auto-approve
           terraform init -input=false 
           terraform plan -input=false -var-file="envs/dev.tfvars"
           terraform apply -input=false -auto-approve -var-file="envs/dev.tfvars"
